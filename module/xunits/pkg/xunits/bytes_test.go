@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xunits/pkg/xunits"
+	"github.com/AeonDigital/Go-Core-xutils/module/xunits/pkg/xunits"
 )
 
 // TestBytes_UnmarshalJSON validates the parsing of various JSON string sizes into Bytes.

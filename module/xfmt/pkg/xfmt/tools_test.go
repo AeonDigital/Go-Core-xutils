@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xfmt/pkg/xfmt"
+	"github.com/AeonDigital/Go-Core-xutils/module/xfmt/pkg/xfmt"
 )
 
 // TestPrint verifies that messages are correctly written to standard output.

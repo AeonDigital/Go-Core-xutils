@@ -1,4 +1,4 @@
-module github.com/AeonDigital/Go-Core-Utils
+module github.com/AeonDigital/Go-Core-xutils
 
 go 1.27.0
 

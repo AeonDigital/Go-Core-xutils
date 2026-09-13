@@ -3,8 +3,8 @@ package sterr
 import (
 	"fmt"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/sterr/internal/fn"
-	"github.com/AeonDigital/Go-Core-Utils/module/sterr/pkg/sterrinterfc"
+	"github.com/AeonDigital/Go-Core-xutils/module/sterr/internal/fn"
+	"github.com/AeonDigital/Go-Core-xutils/module/sterr/pkg/sterrinterfc"
 )
 
 // typedCliError implements the CliError interface providing immutability via cascading copies.

@@ -3,7 +3,7 @@ package fn_test
 import (
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/sterr/pkg/sterr"
+	"github.com/AeonDigital/Go-Core-xutils/module/sterr/pkg/sterr"
 )
 
 // TestTraceCallerLocationEdgeCases hits defensive boundary safety returns

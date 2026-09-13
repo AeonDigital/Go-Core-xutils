@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xstrings/pkg/xstrings"
+	"github.com/AeonDigital/Go-Core-xutils/module/xstrings/pkg/xstrings"
 )
 
 func TestContainsAny(t *testing.T) {

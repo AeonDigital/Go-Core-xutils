@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xunits/pkg/xunits"
+	"github.com/AeonDigital/Go-Core-xutils/module/xunits/pkg/xunits"
 )
 
 // TestTimeDuration_UnmarshalJSON validates the parsing of JSON strings into TimeDuration.

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xlog/pkg/xlog"
-	"github.com/AeonDigital/Go-Core-Utils/module/xunits/pkg/xunits"
+	"github.com/AeonDigital/Go-Core-xutils/module/xlog/pkg/xlog"
+	"github.com/AeonDigital/Go-Core-xutils/module/xunits/pkg/xunits"
 )
 
 // TestIsCLISupportsColors_Table validates every individual guard clause inside

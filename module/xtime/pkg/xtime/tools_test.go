@@ -3,7 +3,7 @@ package xtime_test
 import (
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xtime/pkg/xtime"
+	"github.com/AeonDigital/Go-Core-xutils/module/xtime/pkg/xtime"
 )
 
 // TestNewErr verifies the dynamic creation of error objects.

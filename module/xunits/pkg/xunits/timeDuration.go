@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xstrings/pkg/xstrings"
 	"github.com/AeonDigital/Go-Core-xerrors/pkg/xerrors"
+	"github.com/AeonDigital/Go-Core-xutils/module/xstrings/pkg/xstrings"
 )
 
 const XERR_PKGCTX_TIMEDURATION xerrors.ErrorCode = "XUNITS.TIMEDURATION"

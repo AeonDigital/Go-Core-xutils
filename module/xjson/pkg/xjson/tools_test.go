@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xjson/pkg/xjson"
+	"github.com/AeonDigital/Go-Core-xutils/module/xjson/pkg/xjson"
 )
 
 // TestDumpToJSON verifies serialization of structures into indented JSON strings.

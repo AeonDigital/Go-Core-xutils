@@ -3,8 +3,8 @@ package sterr_test
 import (
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/sterr/pkg/sterr"
-	"github.com/AeonDigital/Go-Core-Utils/module/sterr/pkg/sterrinterfc"
+	"github.com/AeonDigital/Go-Core-xutils/module/sterr/pkg/sterr"
+	"github.com/AeonDigital/Go-Core-xutils/module/sterr/pkg/sterrinterfc"
 )
 
 // TestNewErrorAutoLocation validates if sterr.New capturing engine successfully

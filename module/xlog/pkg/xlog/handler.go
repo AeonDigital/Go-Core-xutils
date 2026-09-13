@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xtime/pkg/xtime"
-	"github.com/AeonDigital/Go-Core-Utils/module/xunits/pkg/xunits"
 	"github.com/AeonDigital/Go-Core-xfs/pkg/xfs"
+	"github.com/AeonDigital/Go-Core-xutils/module/xtime/pkg/xtime"
+	"github.com/AeonDigital/Go-Core-xutils/module/xunits/pkg/xunits"
 	"golang.org/x/term"
 )
 

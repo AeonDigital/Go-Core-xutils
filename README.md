@@ -1,7 +1,7 @@
-Go-Core-Utils
+Go-Core-xutils
 ================================
 
-![Go Test Coverage](https://raw.githubusercontent.com/AeonDigital/Go-Core-Utils/badges/.badges/main/coverage.svg)
+![Go Test Coverage](https://raw.githubusercontent.com/AeonDigital/Go-Core-xutils/badges/.badges/main/coverage.svg)
 
 > [Aeon Digital](http://www.aeondigital.com.br)
 > rianna@aeondigital.com.br

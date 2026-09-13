@@ -3,7 +3,7 @@ package xreflect_test
 import (
 	"testing"
 
-	"github.com/AeonDigital/Go-Core-Utils/module/xreflect/pkg/xreflect"
+	"github.com/AeonDigital/Go-Core-xutils/module/xreflect/pkg/xreflect"
 )
 
 // TestNewInstanceOf verifies memory allocation for both value types and pointer types.
