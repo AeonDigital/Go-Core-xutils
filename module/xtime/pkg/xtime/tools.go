@@ -2,6 +2,7 @@ package xtime
 
 import (
 	"strings"
+	"time"
 )
 
 // FormatGenericDateTimeToGolangLayout converts a universal date/time format string (e.g., "YYYY-MM-DD HH:mm:ss.SSS a") into Go's native reference time layout.
@@ -27,4 +28,34 @@ func FormatGenericDateTimeToGolangLayout(universalLayout string) string {
 	)
 
 	return replacer.Replace(universalLayout)
+}
+
+// Now returns the current local date and time.
+func Now() time.Time {
+	return time.Now()
+}
+
+// NowString returns the current date and time formatted as "YYYY-MM-DD HH:mm:ss".
+func NowString() string {
+	return time.Now().Format("2006-01-02 15:04:05")
+}
+
+// ToDateTimeString formats the given time as "YYYY-MM-DD HH:mm:ss".
+func ToDateTimeString(dt time.Time) string {
+	return dt.Format("2006-01-02 15:04:05")
+}
+
+// ToDateString formats the given time keeping only its date part as "YYYY-MM-DD".
+func ToDateString(dt time.Time) string {
+	return dt.Format("2006-01-02")
+}
+
+// ToTimeString formats the given time keeping only its time part as "HH:mm:ss".
+func ToTimeString(dt time.Time) string {
+	return dt.Format("15:04:05")
+}
+
+// ToHourString formats the given time keeping only its hour and minute as "HH:mm".
+func ToHourString(dt time.Time) string {
+	return dt.Format("15:04")
 }
