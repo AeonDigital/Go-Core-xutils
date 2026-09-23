@@ -49,6 +49,32 @@ func TestPrint(t *testing.T) {
 	}
 }
 
+// TestPrintStream verifies that messages are written to standard output without an automatic newline.
+func TestPrintStream(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe for stdout: %v", err)
+	}
+	os.Stdout = w
+
+	xfmt.PrintInline("hello ")
+	xfmt.PrintInline("%s has id %d", "john", 42)
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("failed to read from stdout pipe: %v", err)
+	}
+
+	expected := "hello john has id 42"
+	if output := buf.String(); output != expected {
+		t.Errorf("PrintStream output mismatch.\nExpected: %q\nActual: %q", expected, output)
+	}
+}
+
 // TestPrintAsTable verifies that tabular data is correctly formatted and printed to standard output.
 func TestPrintAsTable(t *testing.T) {
 	// 1. Capture os.Stdout

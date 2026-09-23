@@ -25,6 +25,22 @@ func Print(message string, args ...any) {
 	fmt.Fprintf(os.Stdout, format, args...)
 }
 
+// PrintInline writes a message to the standard output.
+// Unlike Print, this function does NOT automatically append a newline.
+// The caller is responsible for including "\n" in the message if desired.
+func PrintInline(message string, args ...any) {
+	if len(args) == 0 {
+		// When no variadic arguments are provided, print the message directly.
+		// fmt.Fprint writes the string exactly as given, without adding a newline.
+		fmt.Fprint(os.Stdout, message)
+		return
+	}
+
+	// When variadic arguments are provided, treat 'message' as a format string.
+	// fmt.Fprintf writes formatted output to os.Stdout without forcing a newline.
+	fmt.Fprintf(os.Stdout, message, args...)
+}
+
 // PrintAsTable Prints data formatted in columns to the terminal based on the provided headers.
 func PrintAsTable(headers []string, rows [][]string) {
 	if len(headers) == 0 {
