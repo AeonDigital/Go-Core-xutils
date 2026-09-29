@@ -7,4 +7,6 @@ var (
 	ExportBuildTableRows     = cliPrintTableBuildTableRows
 	ExportCliIsTerminal      = &cliIsTerminal
 	ExportCliGetTerminalSize = &cliGetTerminalSize
+
+	ExportJsonPrettyEncoderExecute = &jsonPrettyEncoderExecute
 )

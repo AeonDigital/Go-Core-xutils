@@ -1,7 +1,10 @@
 package xfmt
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -84,4 +87,60 @@ func PrintCLITable(headers []string, rows [][]string) {
 
 		fmt.Fprintf(tabW, format, rowArgs...)
 	}
+}
+
+// PrintObjectAsJSON marshals any structured data object into an indented, pretty-printed JSON string sequence.
+// It applies a strict 2-space padding constraint ("  ") for nested properties to guarantee clean visual
+// alignment when rendering serialized records within console output interfaces.
+//
+// To circumvent Go's compile-time static struct encoding constraints, this function pipelines serialization
+// through a dynamic interception layer. It translates the object into an intermediary 'map[string]any',
+// allowing the runtime to mutate the underlying property matrix and cleanly purge blacklisted keys before
+// serializing the final visual payload.
+//
+// Parameters:
+//   - obj: The source entity, collection, or structured data block to be serialized.
+//   - ignoreFields: A collection of field identifier strings to be excluded from the final payload.
+//     Crucially, these tokens must match the literal keys defined inside the struct's `json:"..."` tags
+//     (e.g., "scenario_prompt" or "description") rather than the static Go struct field identifiers.
+//
+// Returns:
+//   - A formatted, 2-space indented JSON block string stripped of any trailing newline noise.
+//   - If any phase of the serialization or mapping pipeline encounters an encoding constraint violation,
+//     it bypasses panic states to return a safe, formatted error token: "[ERROR] :: <message>".
+func PrintObjectAsJSON(obj any, ignoreFields []string) string {
+	var err error
+	var bytesData []byte
+
+	bytesData, err = json.Marshal(obj)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] :: %s", err.Error())
+	}
+
+	// 1. Convert initial object matrix into a dynamic generic map map[string]any
+	var rawData map[string]any
+	err = json.Unmarshal(bytesData, &rawData)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] :: %s", err.Error())
+	}
+
+	// 2. Intercept and purge unwanted property keys provided in the filter parameter
+	for _, field := range ignoreFields {
+		delete(rawData, field)
+	}
+
+	// 3. Serialize the filtered map matrix into an indented pretty JSON string block
+	var buf bytes.Buffer
+	err = jsonPrettyEncoderExecute(&buf, rawData)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] :: %s", err.Error())
+	}
+
+	return strings.TrimSpace(buf.String())
+}
+
+var jsonPrettyEncoderExecute = func(w io.Writer, v any) error {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(v)
 }
