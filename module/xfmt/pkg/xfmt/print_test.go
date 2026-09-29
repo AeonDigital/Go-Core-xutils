@@ -86,7 +86,7 @@ func TestPrintAsTable(t *testing.T) {
 	os.Stdout = w
 
 	// 2. Execute scenario 1: Empty headers to cover the early return block
-	xfmt.PrintAsTable([]string{}, [][]string{{"data"}})
+	xfmt.PrintCLITable([]string{}, [][]string{{"data"}})
 
 	// 3. Execute scenario 2: Valid table with a mix of valid rows and an invalid row to cover the len mismatch block
 	headers := []string{"ID", "NAME"}
@@ -95,7 +95,7 @@ func TestPrintAsTable(t *testing.T) {
 		{"2"}, // Invalid row (mismatched length) - will be skipped
 		{"3", "Bob"},
 	}
-	xfmt.PrintAsTable(headers, rows)
+	xfmt.PrintCLITable(headers, rows)
 
 	// Close the writer so we can read from the pipe
 	w.Close()

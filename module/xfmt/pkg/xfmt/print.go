@@ -41,8 +41,19 @@ func PrintInline(message string, args ...any) {
 	fmt.Fprintf(os.Stdout, message, args...)
 }
 
-// PrintAsTable Prints data formatted in columns to the terminal based on the provided headers.
-func PrintAsTable(headers []string, rows [][]string) {
+// PrintCLITable renders architectural string matrices into an aligned column grid directly to standard output.
+// It leverages the low-level standard 'text/tabwriter' engine to format structural content by intercepting
+// horizontal tab delimiters ('\t') and injecting dynamic runtime padding spacing based on a column-widest scanning rule.
+//
+// Because this function acts as the final terminal serialization barrier, it expects the upstream data layers
+// to have already calculated structural word wrapping, multi-line row string equalization, and responsive
+// column-dropping cascades. It forces horizontal column boundary alignment by verifying that every data row's
+// structural layout exact match constraint complies with the total header slice size.
+//
+// Parameters:
+//   - headers: The pre-calculated slice of visible column header label strings that survived responsive pruning.
+//   - rows: The completely structured matrix of processed cell strings, already formatted via truncation or word wrap.
+func PrintCLITable(headers []string, rows [][]string) {
 	if len(headers) == 0 {
 		return
 	}
