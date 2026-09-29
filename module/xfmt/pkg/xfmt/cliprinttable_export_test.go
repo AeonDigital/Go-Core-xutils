@@ -8,5 +8,5 @@ var (
 	ExportCliIsTerminal      = &cliIsTerminal
 	ExportCliGetTerminalSize = &cliGetTerminalSize
 
-	ExportJsonPrettyEncoderExecute = &jsonPrettyEncoderExecute
+	ExportJsonMarshalKeyHook = &jsonMarshalKeyHook
 )

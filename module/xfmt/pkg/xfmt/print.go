@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
+	"sort"
 	"strings"
 	"text/tabwriter"
 )
@@ -89,62 +89,168 @@ func PrintCLITable(headers []string, rows [][]string) {
 	}
 }
 
-// PrintObjectAsJSON marshals any structured data object into an indented, pretty-printed JSON string sequence.
-// It applies a strict 2-space padding constraint ("  ") for nested properties to guarantee clean visual
-// alignment when rendering serialized records within console output interfaces.
+// PrintMapAsJSON serializes a dynamic 'map[string]any' layout model into a clean JSON string sequence
+// enforcing an explicit structural key positioning sequence dictated by the orderKeys parameters.
 //
-// To circumvent Go's compile-time static struct encoding constraints, this function pipelines serialization
-// through a dynamic interception layer. It translates the object into an intermediary 'map[string]any',
-// allowing the runtime to mutate the underlying property matrix and cleanly purge blacklisted keys before
-// serializing the final visual payload.
+// To circumvent Go's runtime behavior which randomizes map key traversal, this function acts as an
+// ordered stream serializer. It maps out prioritary keys found within orderKeys first, appends all
+// remaining keys sorted alphabetically to maintain output determinism, and structures the final text.
+// If pretty is true, it builds vertical whitespace padding alignment based on the provided indent sequence
+// (defaulting to 2 spaces when left blank). If pretty is false, it outputs a single-line compact inline stream.
 //
 // Parameters:
-//   - obj: The source entity, collection, or structured data block to be serialized.
-//   - ignoreFields: A collection of field identifier strings to be excluded from the final payload.
-//     Crucially, these tokens must match the literal keys defined inside the struct's `json:"..."` tags
-//     (e.g., "scenario_prompt" or "description") rather than the static Go struct field identifiers.
-//   - pretty: If true, it applies a strict 2-space padding constraint ("  ") for nested properties; otherwise,
-//     it outputs a single-line inline compact layout structure.
+//   - obj: The raw map matrix containing key-value data nodes to be ordered and formatted.
+//   - orderKeys: An ordered collection of string tokens defining which properties must be rendered first at the top.
+//   - pretty: Flag governing whether to apply vertical whitespace structural alignment and line breaks.
+//   - indent: The literal string pattern used for line padding constraints (e.g., "\t", "    ", "  ").
 //
 // Returns:
-//   - A formatted, 2-space indented JSON block string stripped of any trailing newline noise.
-//   - If any phase of the serialization or mapping pipeline encounters an encoding constraint violation,
-//     it bypasses panic states to return a safe, formatted error token: "[ERROR] :: <message>".
-func PrintObjectAsJSON(obj any, ignoreFields []string, pretty bool) string {
-	var err error
-	var bytesData []byte
-
-	bytesData, err = json.Marshal(obj)
-	if err != nil {
-		return fmt.Sprintf("[ERROR] :: %s", err.Error())
+//   - A clean ordered JSON string output stripped of any outer edge or trailing newline noise characters.
+//   - If any object embedded inside the map cannot be serialized by the marshal layer, it returns: "[ERROR] :: <message>".
+func PrintMapAsJSON(obj map[string]any, orderKeys []string, pretty bool, indent string) string {
+	if obj == nil {
+		return "{}"
 	}
 
-	// 1. Convert initial object matrix into a dynamic generic map map[string]any
-	var rawData map[string]any
-	err = json.Unmarshal(bytesData, &rawData)
-	if err != nil {
-		return fmt.Sprintf("[ERROR] :: %s", err.Error())
+	// 1. Establish the default indentation token if left blank
+	if pretty && indent == "" {
+		indent = "  "
 	}
 
-	// 2. Intercept and purge unwanted property keys provided in the filter parameter
-	for _, field := range ignoreFields {
+	// 2. Map and identify all available keys inside the map matrix
+	availableKeys := make(map[string]bool, len(obj))
+	for k := range obj {
+		availableKeys[k] = true
+	}
+
+	// 3. Extract prioritary ordered keys requested by the developer
+	var finalOrderedKeys []string
+	for _, k := range orderKeys {
+		if availableKeys[k] {
+			finalOrderedKeys = append(finalOrderedKeys, k)
+			delete(availableKeys, k)
+		}
+	}
+
+	// 4. Collect remaining keys and sort them alphabetically for absolute determinism
+	var remainingKeys []string
+	for k := range availableKeys {
+		remainingKeys = append(remainingKeys, k)
+	}
+	sort.Strings(remainingKeys)
+	finalOrderedKeys = append(finalOrderedKeys, remainingKeys...)
+
+	// 5. Serialize the ordered pairs to buffer step-by-step
+	var buf strings.Builder
+	buf.WriteString("{")
+
+	numKeys := len(finalOrderedKeys)
+	for i, k := range finalOrderedKeys {
+		// Apply line breaks and margin indents for pretty printing
+		if pretty {
+			buf.WriteString("\n")
+			buf.WriteString(indent)
+		}
+
+		// Marshal key identifier securely
+		keyBytes, err := jsonMarshalKeyHook(k)
+		if err != nil {
+			return fmt.Sprintf("[ERROR] :: %s", err.Error())
+		}
+		buf.Write(keyBytes)
+
+		if pretty {
+			buf.WriteString(": ")
+		} else {
+			buf.WriteString(":")
+		}
+
+		// Marshal the arbitrary value node
+		valBytes, err := jsonMarshalKeyHook(obj[k])
+		if err != nil {
+			return fmt.Sprintf("[ERROR] :: %s", err.Error())
+		}
+
+		// If the value is a nested struct/map and we are in pretty mode,
+		// we should format it to align nicely with the parent indentation.
+		if pretty && (strings.HasPrefix(string(valBytes), "{") || strings.HasPrefix(string(valBytes), "[")) {
+			var prettyValBuf bytes.Buffer
+			encoder := json.NewEncoder(&prettyValBuf)
+			encoder.SetIndent("", indent)
+			err := encoder.Encode(obj[k])
+			if err == nil {
+				prettyVal := strings.TrimSpace(prettyValBuf.String())
+				// Align nested child lines with the parent current indent depth margin
+				prettyVal = strings.ReplaceAll(prettyVal, "\n", "\n"+indent)
+				buf.WriteString(prettyVal)
+			} else {
+				buf.Write(valBytes)
+			}
+		} else {
+			buf.Write(valBytes)
+		}
+
+		// Append field separator commas appropriately
+		if i < numKeys-1 {
+			buf.WriteString(",")
+		}
+	}
+
+	if pretty && numKeys > 0 {
+		buf.WriteString("\n")
+	}
+	buf.WriteString("}")
+
+	return buf.String()
+}
+
+var jsonMarshalKeyHook = func(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+// PrintObjectAsJSON marshals any generic structured data object into a clean JSON string sequence,
+// features key blacklisting filter rules, and enforces an explicit horizontal property sequence.
+//
+// To circumvent compile-time static type boundaries, this function acts as an orchestration pipeline.
+// It maps the input object into a flexible map, purges blacklisted keys at runtime, and delegates
+// formatting to PrintMapAsJSON to bypass Go's native random map traversal behavior.
+//
+// Parameters:
+//   - obj: The raw source entity, collection, or structured model to be serialized.
+//   - orderKeys: An ordered collection of string tokens defining which JSON property keys must appear first at the top.
+//   - ignoreKeys: A collection of field identifier strings to be completely stripped from the final payload.
+//     Crucially, both orderKeys and ignoreKeys tokens must match the literal names defined inside the object's
+//     struct `json:"..."` tags (e.g., "scenario_prompt" or "description") rather than internal Go identifiers.
+//   - pretty: Flag governing whether to apply vertical whitespace structural alignment and line breaks.
+//   - indent: The literal string pattern used for line padding constraints (e.g., "\t", "    ", "  ").
+//
+// Returns:
+//   - A clean JSON string output stripped of any edge or trailing newline noise characters.
+//   - If any phase of the underlying serialization pipeline fails, it returns: "[ERROR] :: <message>".
+func PrintObjectAsJSON(
+	obj any,
+	orderKeys []string,
+	ignoreKeys []string,
+	pretty bool,
+	indent string,
+) string {
+	if obj == nil {
+		return "{}"
+	}
+
+	// Step 1: Extract the structural property matrix of the object into a live map
+	rawData := ConvertObjectToMap(obj)
+	if len(rawData) == 0 && obj != nil {
+		if _, err := json.Marshal(obj); err != nil {
+			return fmt.Sprintf("[ERROR] :: %s", err.Error())
+		}
+	}
+
+	// Step 2: Intercept and purge unwanted property keys provided in the ignore filter parameters
+	for _, field := range ignoreKeys {
 		delete(rawData, field)
 	}
 
-	// 3. Serialize the filtered map matrix into a JSON string block
-	var buf bytes.Buffer
-	err = jsonPrettyEncoderExecute(&buf, rawData, pretty)
-	if err != nil {
-		return fmt.Sprintf("[ERROR] :: %s", err.Error())
-	}
-
-	return strings.TrimSpace(buf.String())
-}
-
-var jsonPrettyEncoderExecute = func(w io.Writer, v any, pretty bool) error {
-	encoder := json.NewEncoder(w)
-	if pretty {
-		encoder.SetIndent("", "  ")
-	}
-	return encoder.Encode(v)
+	// Step 3: Dispatch the filtered map matrix into the ordered map serialization layer
+	return PrintMapAsJSON(rawData, orderKeys, pretty, indent)
 }

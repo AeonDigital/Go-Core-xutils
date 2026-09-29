@@ -138,3 +138,56 @@ func TestTruncateString(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertObjectToMap(t *testing.T) {
+	type mockProfile struct {
+		Username string `json:"username"`
+		Active   bool   `json:"active"`
+	}
+
+	t.Run("Success translation of a valid structural data type", func(t *testing.T) {
+		profile := mockProfile{Username: "linus", Active: true}
+
+		result := xfmt.ConvertObjectToMap(profile)
+
+		if len(result) != 2 {
+			t.Errorf("expected map to contain exactly 2 elements, got %d", len(result))
+		}
+		if result["username"] != "linus" || result["active"] != true {
+			t.Errorf("extracted matrix mismatch: keys or tokens are corrupted: %v", result)
+		}
+	})
+
+	t.Run("Graceful fallback barrier on nil input interface", func(t *testing.T) {
+		result := xfmt.ConvertObjectToMap(nil)
+
+		if result == nil || len(result) != 0 {
+			t.Errorf("expected a safe initialized empty map structure on nil input")
+		}
+	})
+
+	t.Run("Graceful fallback barrier on unmarshal mismatch types", func(t *testing.T) {
+		// Passar um slice primitivo faz o Marshal gerar um array JSON "[]".
+		// O Unmarshal tenta converter um array em um mapa de strings, forçando a falha controlada.
+		unsupportedSlice := []int{1, 2, 3}
+
+		result := xfmt.ConvertObjectToMap(unsupportedSlice)
+
+		if result == nil || len(result) != 0 {
+			t.Errorf("expected fallback path to trigger, yielding an empty map matrix")
+		}
+	})
+
+	t.Run("Graceful fallback barrier on marshal execution constraints", func(t *testing.T) {
+		// Passar uma chave inválida de canal impossível de serializar
+		brokenPayload := map[string]any{
+			"err_key": make(chan int),
+		}
+
+		result := xfmt.ConvertObjectToMap(brokenPayload)
+
+		if result == nil || len(result) != 0 {
+			t.Errorf("expected encoding failure interception to yield an empty safe map")
+		}
+	})
+}
