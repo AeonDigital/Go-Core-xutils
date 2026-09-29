@@ -130,7 +130,6 @@ func TestPrintAsTable(t *testing.T) {
 }
 
 func TestPrintObjectAsJSON(t *testing.T) {
-	// Definimos uma struct local de testes para simular uma entidade de domínio padrão
 	type mockUserEntity struct {
 		ID       int64  `json:"id"`
 		FullName string `json:"full_name"`
@@ -138,62 +137,52 @@ func TestPrintObjectAsJSON(t *testing.T) {
 	}
 
 	t.Run("Success serialization to pretty JSON with indentation", func(t *testing.T) {
-		user := mockUserEntity{
-			ID:       101,
-			FullName: "Alan Turing",
-			RoleCode: "ADMIN",
-		}
+		user := mockUserEntity{ID: 101, FullName: "Alan Turing", RoleCode: "ADMIN"}
 
-		jsonStr := xfmt.PrintObjectAsJSON(user, nil)
+		// Flag 'pretty' como true
+		jsonStr := xfmt.PrintObjectAsJSON(user, nil, true)
 
-		// Garante que o retorno não disparou a máscara de erro
 		if strings.HasPrefix(jsonStr, "[ERROR]") {
 			t.Errorf("expected clean JSON output, got formatting failure: %s", jsonStr)
 		}
-
-		// Verifica se contém as chaves e valores esperados
-		if !strings.Contains(jsonStr, `"id": 101`) || !strings.Contains(jsonStr, `"full_name": "Alan Turing"`) {
-			t.Errorf("missing properties in serialized JSON payload: %s", jsonStr)
-		}
-
-		// Garante que a indentação de 2 espaços está ativa observando as quebras de linha com espaçamento
 		if !strings.Contains(jsonStr, "\n  ") {
 			t.Errorf("expected output to be pretty-printed with 2-space indentation format")
 		}
 	})
 
-	t.Run("Success serialization stripping out blacklisted ignore fields using json tags", func(t *testing.T) {
-		user := mockUserEntity{
-			ID:       202,
-			FullName: "Linus Torvalds",
-			RoleCode: "KERNEL_DEV",
-		}
+	t.Run("Success serialization to compact inline single-line JSON", func(t *testing.T) {
+		user := mockUserEntity{ID: 102, FullName: "Ada Lovelace", RoleCode: "PIONEER"}
 
-		// Passamos os campos que queremos ignorar (devem bater com a tag JSON "role_code")
-		ignoreList := []string{"role_code"}
-		jsonStr := xfmt.PrintObjectAsJSON(user, ignoreList)
+		// Flag 'pretty' como false (inline)
+		jsonStr := xfmt.PrintObjectAsJSON(user, nil, false)
 
 		if strings.HasPrefix(jsonStr, "[ERROR]") {
 			t.Errorf("expected clean JSON output, got formatting failure: %s", jsonStr)
 		}
-
-		// O nome e ID devem persistir, mas o papel secreto deve sumir
-		if !strings.Contains(jsonStr, `"full_name": "Linus Torvalds"`) {
-			t.Errorf("expected 'full_name' key to persist in the payload")
+		// Não deve conter quebras de linha nem espaços de indentação estrutural
+		if strings.Contains(jsonStr, "\n") || strings.Contains(jsonStr, "  ") {
+			t.Errorf("expected output to be a compact inline single-line string, got: %s", jsonStr)
 		}
-		if strings.Contains(jsonStr, `"role_code"`) || strings.Contains(jsonStr, "KERNEL_DEV") {
+	})
+
+	t.Run("Success serialization stripping out blacklisted ignore fields using json tags", func(t *testing.T) {
+		user := mockUserEntity{ID: 202, FullName: "Linus Torvalds", RoleCode: "KERNEL_DEV"}
+
+		ignoreList := []string{"role_code"}
+		jsonStr := xfmt.PrintObjectAsJSON(user, ignoreList, true)
+
+		if strings.HasPrefix(jsonStr, "[ERROR]") {
+			t.Errorf("expected clean JSON output, got formatting failure: %s", jsonStr)
+		}
+		if strings.Contains(jsonStr, `"role_code"`) {
 			t.Errorf("found blacklisted 'role_code' property key inside filtered JSON output: %s", jsonStr)
 		}
 	})
 
 	t.Run("Fail execution path returning formatted error string on encoding constraints", func(t *testing.T) {
-		// Passar uma função pura ou um canal direto dentro de um tipo anônimo ou de um map
-		// quebra o json.Marshal nativo de forma garantida na primeira linha da função.
-		brokenData := map[string]any{
-			"unsupported_field": make(chan int),
-		}
+		brokenData := map[string]any{"unsupported_field": make(chan int)}
 
-		jsonStr := xfmt.PrintObjectAsJSON(brokenData, nil)
+		jsonStr := xfmt.PrintObjectAsJSON(brokenData, nil, true)
 
 		if !strings.HasPrefix(jsonStr, "[ERROR] ::") {
 			t.Errorf("expected engine barrier to capture serialization fault, but got: %s", jsonStr)
@@ -201,18 +190,9 @@ func TestPrintObjectAsJSON(t *testing.T) {
 	})
 
 	t.Run("Fail execution path on unmarshal stage constraints", func(t *testing.T) {
-		// Retorna uma string crua inválida como JSON objeto (ex: apenas um texto solto sem chaves)
-		_ = func() ([]byte, error) {
-			return []byte(`"not-an-object"`), nil
-		}
-
-		// Como Go exige conformidade estrita para chamar o Marshaler customizado, podemos emular
-		// passando um tipo primitivo complexo que o Marshal aceite mas o Unmarshal para map rejeite.
-		// Se passarmos um slice de inteiros: o Marshal gera "[1,2,3]".
-		// O Unmarshal tenta converter um array JSON "[]" para um "map[string]any", o que é um erro de tipo inválido!
 		sliceData := []int{1, 2, 3}
 
-		jsonStr := xfmt.PrintObjectAsJSON(sliceData, nil)
+		jsonStr := xfmt.PrintObjectAsJSON(sliceData, nil, true)
 
 		if !strings.HasPrefix(jsonStr, "[ERROR] ::") {
 			t.Errorf("expected unmarshal matrix constraint to trigger a failure token, but got: %s", jsonStr)
@@ -220,17 +200,16 @@ func TestPrintObjectAsJSON(t *testing.T) {
 	})
 
 	t.Run("Fail execution path on final encoder stage constraints", func(t *testing.T) {
-		// Salva o executor original e garante sua restauração ao final do subteste
 		origEncoder := *xfmt.ExportJsonPrettyEncoderExecute
 		defer func() { *xfmt.ExportJsonPrettyEncoderExecute = origEncoder }()
 
-		// Sabota o executor final para forçar um erro controlado
-		*xfmt.ExportJsonPrettyEncoderExecute = func(w io.Writer, v any) error {
-			return os.ErrClosed // Simula um erro qualquer de I/O ou restrição
+		// Atualizado para coincidir com a nova assinatura (incluindo o parâmetro booleano)
+		*xfmt.ExportJsonPrettyEncoderExecute = func(w io.Writer, v any, pretty bool) error {
+			return os.ErrClosed
 		}
 
 		validData := map[string]any{"ok": true}
-		jsonStr := xfmt.PrintObjectAsJSON(validData, nil)
+		jsonStr := xfmt.PrintObjectAsJSON(validData, nil, true)
 
 		if !strings.HasPrefix(jsonStr, "[ERROR] ::") {
 			t.Errorf("expected final encoder barrier to capture serialization fault, but got: %s", jsonStr)

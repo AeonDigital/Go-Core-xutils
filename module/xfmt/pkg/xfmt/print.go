@@ -103,12 +103,14 @@ func PrintCLITable(headers []string, rows [][]string) {
 //   - ignoreFields: A collection of field identifier strings to be excluded from the final payload.
 //     Crucially, these tokens must match the literal keys defined inside the struct's `json:"..."` tags
 //     (e.g., "scenario_prompt" or "description") rather than the static Go struct field identifiers.
+//   - pretty: If true, it applies a strict 2-space padding constraint ("  ") for nested properties; otherwise,
+//     it outputs a single-line inline compact layout structure.
 //
 // Returns:
 //   - A formatted, 2-space indented JSON block string stripped of any trailing newline noise.
 //   - If any phase of the serialization or mapping pipeline encounters an encoding constraint violation,
 //     it bypasses panic states to return a safe, formatted error token: "[ERROR] :: <message>".
-func PrintObjectAsJSON(obj any, ignoreFields []string) string {
+func PrintObjectAsJSON(obj any, ignoreFields []string, pretty bool) string {
 	var err error
 	var bytesData []byte
 
@@ -129,9 +131,9 @@ func PrintObjectAsJSON(obj any, ignoreFields []string) string {
 		delete(rawData, field)
 	}
 
-	// 3. Serialize the filtered map matrix into an indented pretty JSON string block
+	// 3. Serialize the filtered map matrix into a JSON string block
 	var buf bytes.Buffer
-	err = jsonPrettyEncoderExecute(&buf, rawData)
+	err = jsonPrettyEncoderExecute(&buf, rawData, pretty)
 	if err != nil {
 		return fmt.Sprintf("[ERROR] :: %s", err.Error())
 	}
@@ -139,8 +141,10 @@ func PrintObjectAsJSON(obj any, ignoreFields []string) string {
 	return strings.TrimSpace(buf.String())
 }
 
-var jsonPrettyEncoderExecute = func(w io.Writer, v any) error {
+var jsonPrettyEncoderExecute = func(w io.Writer, v any, pretty bool) error {
 	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
+	if pretty {
+		encoder.SetIndent("", "  ")
+	}
 	return encoder.Encode(v)
 }
